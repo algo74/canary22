@@ -1,18 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <getopt.h>
-
-#include <chrono>
-#include <iostream>
-#include <functional>
-#include <fstream>
-#include <map>
-#include <string>
-#include <vector>
-
 
 
 //#include <dirent.h>
@@ -20,41 +12,9 @@
 #include <stdlib.h>
 #include <lustre/lustreapi.h>
 
-#define MAX_OSTS 1024
-#define LOV_EA_SIZE(lum, num) (sizeof(*lum) + num * sizeof(*lum->lmm_objects))
-#define LOV_EA_MAX(lum) LOV_EA_SIZE(lum, MAX_OSTS)
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
-
-/*
- * This program provides crude examples of using the lustreapi API functions
- */
-/* Change these definitions to suit */
-
-#define FILESIZE 262144                    /* Size of the file in words */
-
-int close_file(int fd)
-{
-  if (::close(fd) < 0) {
-    fprintf(stderr, "File close failed: %d (%s)\n", errno, strerror(errno));
-    return -1;
-  }
-  return 0;
-}
-
-
-int write_file(int fd)
-{
-  char *stng =  DUMWORD;
-  int cnt = 0;
-
-  for( cnt = 0; cnt < FILESIZE; cnt++) {
-    write(fd, stng, sizeof(stng));
-  }
-  return 0;
-}
 
 
 /* Open a file, set a specific stripe count, size and starting OST
@@ -80,41 +40,27 @@ int open_stripe_file(const char *tfile, const int mode, const int stripe_offset)
 }
 
 
-using namespace std::chrono;
-
-struct measure
-{
-  template<typename F, typename ...Args>
-  static milliseconds::rep ms(F func, Args&&... args)
-  {
-    auto start = system_clock::now();
-    func(std::forward<Args>(args)...);
-    auto stop = system_clock::now();
-
-    return duration_cast<milliseconds>(stop - start).count();
-  }
-};
-
 
 void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
 {
   for (char *p = fileContent; p < fileContent + fileSize; p += b_size)
   {
-    ::write(out, p, b_size);
+    write(out, p, b_size);
   }
 }
 
 
-milliseconds::rep testPosixIO(const char* outFile, const int ost)
+double testPosixIO(const char* outFile, const int ost)
 {
   size_t b_size = 64 * 1024;
   size_t s_count = 64;
+  clock_t start_t, end_t;
 
   size_t fileSize = s_count * b_size;
   // allocate buffer for the file content
-  char *fileContent = static_cast<char *>(malloc(fileSize));
-  if (fileContent == nullptr) {
-    std::cerr << "Can't allocate buffer of size " << fileSize << std::endl;
+  char *fileContent = malloc(fileSize);
+  if (fileContent == 0) {
+    fprintf(stderr, "Can't allocate buffer of size %d", fileSize);
     return -1;
   }
   // TODO: fill up the file content
@@ -122,14 +68,17 @@ milliseconds::rep testPosixIO(const char* outFile, const int ost)
   int out = open_stripe_file(outFile, 0666, ost);
   if (out < 0)
   {
-    std::cerr << "Can't open output file " << outFile << " on OST " << ost << std::endl;
+    fprintf(stderr, "Can't open output file %s on OST %d", outFile);
     return -1;
   }
+
   // Write content to the file
-  std::chrono::milliseconds::rep duration = measure::ms(do_write, b_size, fileSize, fileContent, out);
+  start_t = clock();
+  do_write(b_size, fileSize, fileContent, out);
+  end_t = clock();
   // close the file
-  ::close(out);
-  return duration;
+  close(out);
+  return (double)(end_t - start_t) / CLOCKS_PER_SEC;
 }
 
 
@@ -177,7 +126,7 @@ int main(int argc, char* argv[])
          * for this option. it is null if there was no argument.
          */
         if (strlen(optarg) >= sizeof(filename)) {
-          std::cerr << "Error: filename longer than 255: " << optarg << std::endl;
+//          std::cerr << "Error: filename longer than 255: " << optarg << std::endl;
           usage (stderr, argv[0]);
           return 1;
         }
@@ -188,7 +137,7 @@ int main(int argc, char* argv[])
         char *pEnd;
         ost = strtoul(optarg, &pEnd, 10);
         if (pEnd != optarg + strlen(optarg)) {
-          std::cerr << "Error: bad value for OST (non-negative integer is expected): " << optarg << std::endl;
+//          std::cerr << "Error: bad value for OST (non-negative integer is expected): " << optarg << std::endl;
           usage (stderr, argv[0]);
           return 1;
         }
@@ -205,8 +154,8 @@ int main(int argc, char* argv[])
     }
   }
 
-  std::chrono::milliseconds::rep duration = testPosixIO(filename, ost);
+  double duration = testPosixIO(filename, ost);
 
-  std::cout << duration << std::endl;
+  printf("%f", duration);
   return 0;
 }
