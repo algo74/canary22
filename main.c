@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
         char *pEnd = 0;
         ost = strtoul(optarg, &pEnd, 10);
         if (pEnd != optarg + strlen(optarg)) {
-          fprintf(stderr, "Error: bad value for OST (non-negative integer is expected): %uz\n", optarg);
+          fprintf(stderr, "Error: bad value for OST (non-negative integer is expected): %s\n", optarg);
           usage (stderr, argv[0]);
           return 1;
         }
