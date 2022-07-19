@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
          * for this option. it is null if there was no argument.
          */
         if (strlen(optarg) >= sizeof(filename)) {
-          fprintf("Error: filename longer than 255: %s\n", optarg);
+          fprintf(stderr, "Error: filename longer than 255: %s\n", optarg);
           usage (stderr, argv[0]);
           return 1;
         }
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
         char *pEnd = 0;
         ost = strtoul(optarg, &pEnd, 10);
         if (pEnd != optarg + strlen(optarg)) {
-          fprintf("Error: bad value for OST (non-negative integer is expected): %uz\n", optarg);
+          fprintf(stderr, "Error: bad value for OST (non-negative integer is expected): %uz\n", optarg);
           usage (stderr, argv[0]);
           return 1;
         }
