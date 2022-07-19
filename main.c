@@ -25,13 +25,15 @@ int open_stripe_file(const char *tfile, const int mode, const int stripe_offset)
   int stripe_pattern = 0;     /* only RAID 0 at this time */
   int rc, fd;
 
+//  printf("O_BINARY: %d\n", O_BINARY);
+
   rc = llapi_file_open(tfile, O_CREAT | O_WRONLY | O_BINARY, mode,
                          stripe_size,stripe_offset,stripe_count,stripe_pattern);
   /* result code is inverted, we may return -EINVAL or an ioctl error.
    * We borrow an error message from sanity.c
    */
-  if (rc) {
-    fprintf(stderr,"llapi_file_open failed: %d (%s) \n", rc, strerror(-rc));
+  if (rc < 0) {
+    fprintf(stderr,"llapi_file_open failed: Error %d (%s) \n", -rc, strerror(-rc));
     return -1;
   }
   return fd;
