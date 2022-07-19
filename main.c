@@ -82,6 +82,12 @@ double testPosixIO(const char* outFile, const size_t ost)
 }
 
 
+void usage(FILE f, char *exe)
+{
+  fprinf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #> }", exe);
+}
+
+
 int main(int argc, char* argv[])
 {
   char filename[256] = { 0 };
