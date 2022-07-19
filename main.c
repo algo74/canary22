@@ -58,7 +58,7 @@ double testPosixIO(const char* outFile, const size_t ost)
   // allocate buffer for the file content
   char *fileContent = malloc(fileSize);
   if (fileContent == 0) {
-    fprintf(stderr, "Can't allocate buffer of size %zu", fileSize);
+    fprintf(stderr, "Can't allocate buffer of size %zu\n", fileSize);
     return -1;
   }
   // TODO: fill up the file content
@@ -66,7 +66,7 @@ double testPosixIO(const char* outFile, const size_t ost)
   int out = open_stripe_file(outFile, 0666, ost);
   if (out < 0)
   {
-    fprintf(stderr, "Can't open output file %s on OST %zu", outFile, ost);
+    fprintf(stderr, "Can't open output file %s on OST %zu\n", outFile, ost);
     return -1;
   }
 
@@ -82,7 +82,7 @@ double testPosixIO(const char* outFile, const size_t ost)
 
 void usage(FILE *f, char *exe)
 {
-  fprintf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #> }", exe);
+  fprintf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #> }\n", exe);
 }
 
 
@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
          * for this option. it is null if there was no argument.
          */
         if (strlen(optarg) >= sizeof(filename)) {
-//          std::cerr << "Error: filename longer than 255: " << optarg << std::endl;
+          fprintf("Error: filename longer than 255: %s\n", optarg);
           usage (stderr, argv[0]);
           return 1;
         }
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
         char *pEnd = 0;
         ost = strtoul(optarg, &pEnd, 10);
         if (pEnd != optarg + strlen(optarg)) {
-//          std::cerr << "Error: bad value for OST (non-negative integer is expected): " << optarg << std::endl;
+          fprintf("Error: bad value for OST (non-negative integer is expected): %uz\n", optarg);
           usage (stderr, argv[0]);
           return 1;
         }
@@ -161,15 +161,15 @@ int main(int argc, char* argv[])
   int good = 1;
   if (filename[0] == 0) {
     good = 0;
-    fprintf(stderr, "Filename option is required");
+    fprintf(stderr, "Filename option is required\n");
   }
   if (ost == SIZE_MAX) {
     good = 0;
-    fprintf(stderr, "OST option is required");
+    fprintf(stderr, "OST option is required\n");
   }
 
   if (good == 0) {
-    usage(f, argv[0]);
+    usage(stderr, argv[0]);
     return 1;
   }
 
