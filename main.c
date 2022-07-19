@@ -50,7 +50,7 @@ void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
 }
 
 
-double testPosixIO(const char* outFile, const int ost)
+double testPosixIO(const char* outFile, const size_t ost)
 {
   size_t b_size = 64 * 1024;
   size_t s_count = 64;
@@ -85,7 +85,7 @@ double testPosixIO(const char* outFile, const int ost)
 int main(int argc, char* argv[])
 {
   char filename[256] = { 0 };
-  int ost = 0;
+  size_t ost = 0;
   struct option longopts[] = {
       { "help", no_argument, NULL, 'h' },
       { "filename", required_argument, NULL, 'f' },
@@ -134,7 +134,8 @@ int main(int argc, char* argv[])
         filename[sizeof (filename) - 1] = '\0';
         break;
       case 'o':
-        char *pEnd;
+        ; // need a statement after the label and "declaration is not a statement"
+        char *pEnd = 0;
         ost = strtoul(optarg, &pEnd, 10);
         if (pEnd != optarg + strlen(optarg)) {
 //          std::cerr << "Error: bad value for OST (non-negative integer is expected): " << optarg << std::endl;
