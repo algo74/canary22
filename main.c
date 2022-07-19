@@ -27,13 +27,13 @@ int open_stripe_file(const char *tfile, const int mode, const int stripe_offset)
   int stripe_pattern = 0;     /* only RAID 0 at this time */
   int rc, fd;
 
-  rc = llapi_file_create(tfile, O_CREAT | O_WRONLY | O_BINARY, mode,
+  rc = llapi_file_open(tfile, O_CREAT | O_WRONLY | O_BINARY, mode,
                          stripe_size,stripe_offset,stripe_count,stripe_pattern);
   /* result code is inverted, we may return -EINVAL or an ioctl error.
    * We borrow an error message from sanity.c
    */
   if (rc) {
-    fprintf(stderr,"llapi_file_create failed: %d (%s) \n", rc, strerror(-rc));
+    fprintf(stderr,"llapi_file_open failed: %d (%s) \n", rc, strerror(-rc));
     return -1;
   }
   return fd;
@@ -60,7 +60,7 @@ double testPosixIO(const char* outFile, const int ost)
   // allocate buffer for the file content
   char *fileContent = malloc(fileSize);
   if (fileContent == 0) {
-    fprintf(stderr, "Can't allocate buffer of size %d", fileSize);
+    fprintf(stderr, "Can't allocate buffer of size %zu", fileSize);
     return -1;
   }
   // TODO: fill up the file content
@@ -68,7 +68,7 @@ double testPosixIO(const char* outFile, const int ost)
   int out = open_stripe_file(outFile, 0666, ost);
   if (out < 0)
   {
-    fprintf(stderr, "Can't open output file %s on OST %d", outFile);
+    fprintf(stderr, "Can't open output file %s on OST %zu", outFile, ost);
     return -1;
   }
 
