@@ -7,9 +7,7 @@
 #include <getopt.h>
 
 
-//#include <dirent.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <lustre/lustreapi.h>
 
 #ifndef O_BINARY
@@ -82,16 +80,16 @@ double testPosixIO(const char* outFile, const size_t ost)
 }
 
 
-void usage(FILE f, char *exe)
+void usage(FILE *f, char *exe)
 {
-  fprinf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #> }", exe);
+  fprintf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #> }", exe);
 }
 
 
 int main(int argc, char* argv[])
 {
   char filename[256] = { 0 };
-  size_t ost = 0;
+  size_t ost = SIZE_MAX;
   struct option longopts[] = {
       { "help", no_argument, NULL, 'h' },
       { "filename", required_argument, NULL, 'f' },
@@ -100,7 +98,7 @@ int main(int argc, char* argv[])
   };
 
   /* infinite loop, to be broken when we are done parsing options */
-  while (true) {
+  while (1) {
     /* getopt_long supports GNU-style full-word "long" options in addition
      * to the single-character "short" options which are supported by
      * getopt.
@@ -159,6 +157,20 @@ int main(int argc, char* argv[])
       default:
         break;
     }
+  }
+  int good = 1;
+  if (filename[0] == 0) {
+    good = 0;
+    fprintf(stderr, "Filename option is required");
+  }
+  if (ost == SIZE_MAX) {
+    good = 0;
+    fprintf(stderr, "OST option is required");
+  }
+
+  if (good == 0) {
+    usage(f, argv[0]);
+    return 1;
   }
 
   double duration = testPosixIO(filename, ost);
