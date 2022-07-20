@@ -61,7 +61,7 @@ double testPosixIO(const char* outFile, const size_t ost)
   char *fileContent = malloc(fileSize);
   if (fileContent == 0) {
     fprintf(stderr, "Can't allocate buffer of size %zu\n", fileSize);
-    return -1;
+    exit(-1);
   }
   // TODO: fill up the file content
   // open the file
@@ -69,7 +69,7 @@ double testPosixIO(const char* outFile, const size_t ost)
   if (out < 0)
   {
     fprintf(stderr, "Can't open output file %s on OST %zu\n", outFile, ost);
-    return -1;
+    exit(-1);
   }
 
   // Write content to the file
@@ -78,6 +78,7 @@ double testPosixIO(const char* outFile, const size_t ost)
   end_t = clock();
   // close the file
   close(out);
+  unlink(outFile);
   return (double)(end_t - start_t) / CLOCKS_PER_SEC;
 }
 
@@ -176,6 +177,7 @@ int main(int argc, char* argv[])
   }
 
   double duration = testPosixIO(filename, ost);
+
 
   printf("%f\n", duration);
   return 0;
