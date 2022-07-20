@@ -68,6 +68,14 @@ void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
 }
 
 
+void do_write1(size_t b_size, size_t fileSize, char *fileContent, int out)
+{
+    write(out, fileContent, fileSize);
+    fsync(out);
+}
+
+
+
 double testPosixIO(const char* outFile, const size_t ost, const size_t size)
 {
   size_t b_size = 64 * 1024;
