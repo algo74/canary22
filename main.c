@@ -177,6 +177,6 @@ int main(int argc, char* argv[])
 
   double duration = testPosixIO(filename, ost);
 
-  printf("%f", duration);
+  printf("%f\n", duration);
   return 0;
 }
