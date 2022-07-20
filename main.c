@@ -15,6 +15,24 @@
 #endif
 
 
+
+typedef struct timespec my_time;
+
+my_time get_time()
+{
+  my_time ts;
+  clock_gettime(CLOCK_BOOTTIME, &ts);
+  return ts;
+}
+
+double time_diff(my_time start, my_time end)
+{
+  int sec = end.tv_sec - start.tv_sec;
+  int nsec = end.tv_nsec - start.tv_nsec;
+  return (double) sec + 1e-9 * (double) nsec;
+}
+
+
 /* Open a file, set a specific stripe count, size and starting OST
  *    Adjust the parameters to suit */
 int open_stripe_file(const char *tfile, const int mode, const int stripe_offset)
@@ -54,7 +72,7 @@ double testPosixIO(const char* outFile, const size_t ost, const size_t size)
 {
   size_t b_size = 64 * 1024;
   size_t s_count = 16 * size;
-  clock_t start_t, end_t;
+  my_time start_t, end_t;
 
   size_t fileSize = s_count * b_size;
   // allocate buffer for the file content
@@ -73,13 +91,13 @@ double testPosixIO(const char* outFile, const size_t ost, const size_t size)
   }
 
   // Write content to the file
-  start_t = clock();
+  start_t = get_time();
   do_write(b_size, fileSize, fileContent, out);
-  end_t = clock();
+  end_t = get_time();
   // close the file
   close(out);
   unlink(outFile);
-  return (double)(end_t - start_t) / CLOCKS_PER_SEC;
+  return time_diff(start_t, end_t);
 }
 
 
