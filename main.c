@@ -84,7 +84,7 @@ double testPosixIO(const char* outFile, const size_t ost, const size_t size)
   // fill up the file content
   int x1 = rand();
   int x2 = rand();
-  for (int *p = (int)fileContent; p < (int)(fileContent+fileSize); p+= 2) {
+  for (int *p = (int*)fileContent; p < (int*)(fileContent+fileSize); p+= 2) {
     *p = x1;
     *(p+1) = x2;
     x1++;
