@@ -196,9 +196,11 @@ int main(int argc, char* argv[])
     return 1;
   }
 
+  time_t start = time(NULL);
   double duration = testPosixIO(filename, ost, size);
+  time_t end = time(NULL);
 
+  printf("%ld, %ld, %ld, %f\n", start, end, ost, duration);
 
-  printf("%f\n", duration);
   return 0;
 }
