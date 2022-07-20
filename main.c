@@ -82,6 +82,14 @@ double testPosixIO(const char* outFile, const size_t ost, const size_t size)
     exit(-1);
   }
   // TODO: fill up the file content
+  int x1 = rand();
+  int x2 = rand();
+  for (int *p = fileContent; p < fileContent+fileSize; p+= 2) {
+    *p = x1;
+    *(p+1) = x2;
+    x1++;
+    x2 += 7905479;
+  }
   // open the file
   int out = open_stripe_file(outFile, 0666, ost);
   if (out < 0)
@@ -97,6 +105,7 @@ double testPosixIO(const char* outFile, const size_t ost, const size_t size)
   // close the file
   close(out);
   unlink(outFile);
+  free(fileContent);
   return time_diff(start_t, end_t);
 }
 
