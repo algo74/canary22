@@ -46,6 +46,7 @@ void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
   for (char *p = fileContent; p < fileContent + fileSize; p += b_size)
   {
     write(out, p, b_size);
+    fsync(out);
   }
 }
 
