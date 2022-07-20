@@ -50,10 +50,10 @@ void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
 }
 
 
-double testPosixIO(const char* outFile, const size_t ost)
+double testPosixIO(const char* outFile, const size_t ost, const size_t size)
 {
   size_t b_size = 64 * 1024;
-  size_t s_count = 64;
+  size_t s_count = 16 * size;
   clock_t start_t, end_t;
 
   size_t fileSize = s_count * b_size;
@@ -85,7 +85,7 @@ double testPosixIO(const char* outFile, const size_t ost)
 
 void usage(FILE *f, char *exe)
 {
-  fprintf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #> }\n", exe);
+  fprintf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #> [{-s|--size} <MiB>]}\n", exe);
 }
 
 
@@ -93,10 +93,12 @@ int main(int argc, char* argv[])
 {
   char filename[256] = { 0 };
   size_t ost = SIZE_MAX;
+  size_t size = 1;
   struct option longopts[] = {
       { "help", no_argument, NULL, 'h' },
       { "filename", required_argument, NULL, 'f' },
       { "ost", required_argument, NULL, 'o' },
+      { "size", required_argument, NULL, 's' },
       { 0 }
   };
 
@@ -110,7 +112,7 @@ int main(int argc, char* argv[])
      * one colon after an option indicates that it has an argument, two
      * indicates that the argument is optional. order is unimportant.
      */
-    int opt = getopt_long (argc, argv, "ho:f:", longopts, 0);
+    int opt = getopt_long (argc, argv, "ho:f:s:", longopts, 0);
 
     if (opt == -1) {
       /* a return value of -1 indicates that there are no more options */
@@ -118,14 +120,8 @@ int main(int argc, char* argv[])
     }
 
     switch (opt) {
+      char *pEnd = 0;
       case 'h':
-        /* the help_flag and value are specified in the longopts table,
-         * which means that when the --help option is specified (in its long
-         * form), the help_flag variable will be automatically set.
-         * however, the parser for short-form options does not support the
-         * automatic setting of flags, so we still need this code to set the
-         * help_flag manually when the -h option is specified.
-         */
         usage (stderr, argv[0]);
         return 0;
       case 'f':
@@ -141,11 +137,17 @@ int main(int argc, char* argv[])
         filename[sizeof (filename) - 1] = '\0';
         break;
       case 'o':
-        ; // need a statement after the label and "declaration is not a statement"
-        char *pEnd = 0;
         ost = strtoul(optarg, &pEnd, 10);
         if (pEnd != optarg + strlen(optarg)) {
           fprintf(stderr, "Error: bad value for OST (non-negative integer is expected): %s\n", optarg);
+          usage (stderr, argv[0]);
+          return 1;
+        }
+        break;
+      case 's':
+        size = strtoul(optarg, &pEnd, 10);
+        if (size == 0 || pEnd != optarg + strlen(optarg)) {
+          fprintf(stderr, "Error: bad value for size in MiB (positive integer is expected): %s\n", optarg);
           usage (stderr, argv[0]);
           return 1;
         }
@@ -176,7 +178,7 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  double duration = testPosixIO(filename, ost);
+  double duration = testPosixIO(filename, ost, size);
 
 
   printf("%f\n", duration);
