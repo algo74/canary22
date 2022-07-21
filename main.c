@@ -15,7 +15,6 @@
 #endif
 
 
-
 typedef struct timespec my_time;
 
 my_time get_time()
@@ -24,6 +23,7 @@ my_time get_time()
   clock_gettime(CLOCK_BOOTTIME, &ts);
   return ts;
 }
+
 
 double time_diff(my_time start, my_time end)
 {
@@ -57,7 +57,6 @@ int open_stripe_file(const char *tfile, const int mode, const int stripe_offset)
 }
 
 
-
 void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
 {
   for (char *p = fileContent; p < fileContent + fileSize; p += b_size)
@@ -73,7 +72,6 @@ void do_write1(size_t b_size, size_t fileSize, char *fileContent, int out)
     write(out, fileContent, fileSize);
     fsync(out);
 }
-
 
 
 double testPosixIO(const char* outFile, const size_t ost, const size_t size)
@@ -217,7 +215,7 @@ int main(int argc, char* argv[])
   double duration = testPosixIO(filename, ost, size);
   time_t end = time(NULL);
 
-  printf("%ld, %ld, %ld, %f\n", start, end, ost, duration);
+  printf("%ld, %ld, %ld, %f, %ld\n", start, end, ost, duration, size);
 
   return 0;
 }
