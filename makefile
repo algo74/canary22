@@ -10,7 +10,7 @@ canary: main.o simple_server/cJSON.o simple_server/client.o
 	$(LINK.c) -o canary main.o simple_server/client.o simple_server/cJSON.o
 
 simple_server/%.o:
-    cd simple_server && make %.o
+	cd simple_server && make $(@F)
 
 clean:
 	rm -f core canary *.o

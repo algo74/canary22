@@ -64,6 +64,7 @@ void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
     size_t written = write(out, p, b_size);
     if (written == -1) {
       // TODO: proper error handling
+      fprintf(stderr, "Error writing to the file\n");
       exit(0xff);
     }
     p += written;
