@@ -245,8 +245,10 @@ int main(int argc, char* argv[])
 
     // Write content to the file
     start_t = get_time();
+    time_t start_ts = time(NULL);
     int result = do_write(b_size, fileSize, fileContent, out);
     end_t = get_time();
+    time_t end_ts = time(NULL);
     // close the file
     close(out);
     unlink(filename);
@@ -254,7 +256,7 @@ int main(int argc, char* argv[])
     if (result == 0) {
       // good experiment - write the result
       double duration = time_diff(start_t, end_t);
-      printf("%ld, %ld, %zu, %f, %zu\n", time_to_ts(start_t), time_to_ts(end_t), ost, duration, fileSize);
+      printf("%lld, %lld, %zu, %f, %zu\n", start_ts, end_ts, ost, duration, fileSize);
       free(fileContent);
       return 0;
     }
