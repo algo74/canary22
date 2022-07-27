@@ -1,0 +1,3 @@
+[submodule "simple_server"]
+	path = simple_server
+	url = git@github.com:algo74/simple_server.git
