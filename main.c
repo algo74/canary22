@@ -59,9 +59,14 @@ int open_stripe_file(const char *tfile, const int mode, const int stripe_offset)
 
 void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
 {
-  for (char *p = fileContent; p < fileContent + fileSize; p += b_size)
+  for (char *p = fileContent; p < fileContent + fileSize;)
   {
-    write(out, p, b_size);
+    size_t written = write(out, p, b_size);
+    if (written == -1) {
+      // TODO: proper error handling
+      exit(0xff);
+    }
+    p += written;
     fsync(out);
   }
 }
@@ -69,8 +74,11 @@ void do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
 
 void do_write1(size_t b_size, size_t fileSize, char *fileContent, int out)
 {
-    write(out, fileContent, fileSize);
-    fsync(out);
+  // TODO: write() (and similar system calls) will transfer at
+  //  most 0x7ffff000 (2,147,479,552) bytes, returning the number of
+  //  bytes actually transferred.
+  write(out, fileContent, fileSize);
+  fsync(out);
 }
 
 
