@@ -18,7 +18,7 @@
 
 typedef struct timespec my_time;
 
-my_time get_time()
+my_time get_precise_time()
 {
   my_time ts;
   clock_gettime(CLOCK_BOOTTIME, &ts);
@@ -34,9 +34,9 @@ double time_diff(my_time start, my_time end)
 }
 
 
-long time_to_ts(my_time time)
+long get_ts()
 {
-  return (long) time.tv_sec;
+  return (long) time(NULL);
 }
 
 
@@ -244,11 +244,11 @@ int main(int argc, char* argv[])
     }
 
     // Write content to the file
-    start_t = get_time();
-    time_t start_ts = time(NULL);
+    start_t = get_precise_time();
+    long start_ts = get_ts();
     int result = do_write(b_size, fileSize, fileContent, out);
-    end_t = get_time();
-    time_t end_ts = time(NULL);
+    end_t = get_precise_time();
+    long end_ts = get_ts();
     // close the file
     close(out);
     unlink(filename);
@@ -256,7 +256,7 @@ int main(int argc, char* argv[])
     if (result == 0) {
       // good experiment - write the result
       double duration = time_diff(start_t, end_t);
-      printf("%lld, %lld, %zu, %f, %zu\n", start_ts, end_ts, ost, duration, fileSize);
+      printf("%ld, %ld, %zu, %f, %zu\n", start_ts, end_ts, ost, duration, fileSize);
       free(fileContent);
       return 0;
     }
