@@ -16,6 +16,8 @@
 
 #include "simple_server/client.h"
 
+#define MAXLEN 1024
+
 typedef struct timespec my_time;
 
 my_time get_precise_time()
@@ -42,20 +44,20 @@ long get_ts()
 
 int send_to_server(int sockfd, size_t start_ts, size_t end_ts, size_t ost, double duration, size_t fileSize)
 {
-  const int maxlen = 1024;
-  char buffer[maxlen] = { 0 };
+  int rc = 0;
+  char buffer[MAXLEN] = { 0 };
   // TODO: proper encoding error handling
   cJSON *req =  cJSON_CreateObject();
   cJSON_AddStringToObject(req, "type", "process_canary_probe");
-  snprintf(buffer, maxlen, "%zu", start_ts);
+  snprintf(buffer, MAXLEN, "%zu", start_ts);
   cJSON_AddStringToObject(req, "start_time", buffer);
-  snprintf(buffer, maxlen, "%zu", end_ts);
+  snprintf(buffer, MAXLEN, "%zu", end_ts);
   cJSON_AddStringToObject(req, "end_time", buffer);
-  snprintf(buffer, maxlen, "%zu", ost);
+  snprintf(buffer, MAXLEN, "%zu", ost);
   cJSON_AddStringToObject(req, "OST", buffer);
-  snprintf(buffer, maxlen, "%f", duration);
+  snprintf(buffer, MAXLEN, "%f", duration);
   cJSON_AddStringToObject(req, "duration", buffer);
-  snprintf(buffer, maxlen, "%zu", fileSize);
+  snprintf(buffer, MAXLEN, "%zu", fileSize);
   cJSON_AddStringToObject(req, "file_size", buffer);
   cJSON *resp = send_receive(sockfd, req);
   cJSON_Delete(req);
@@ -70,6 +72,7 @@ int send_to_server(int sockfd, size_t start_ts, size_t end_ts, size_t ost, doubl
       rc = 44;
     }
     cJSON_Delete(resp);
+    return rc;
   }
 }
 
