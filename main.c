@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -37,6 +37,40 @@ double time_diff(my_time start, my_time end)
 long get_ts()
 {
   return (long) time(NULL);
+}
+
+
+int send_to_server(int sockfd, size_t start_ts, size_t end_ts, size_t ost, double duration, size_t fileSize)
+{
+  const int maxlen = 1024;
+  char buffer[maxlen] = { 0 };
+  // TODO: proper encoding error handling
+  cJSON *req =  cJSON_CreateObject();
+  cJSON_AddStringToObject(req, "type", "process_canary_probe");
+  snprintf(buffer, maxlen, "%zu", start_ts);
+  cJSON_AddStringToObject(req, "start_time", buffer);
+  snprintf(buffer, maxlen, "%zu", end_ts);
+  cJSON_AddStringToObject(req, "end_time", buffer);
+  snprintf(buffer, maxlen, "%zu", ost);
+  cJSON_AddStringToObject(req, "OST", buffer);
+  snprintf(buffer, maxlen, "%f", duration);
+  cJSON_AddStringToObject(req, "duration", buffer);
+  snprintf(buffer, maxlen, "%zu", fileSize);
+  cJSON_AddStringToObject(req, "file_size", buffer);
+  cJSON *resp = send_receive(sockfd, req);
+  cJSON_Delete(req);
+  // TODO: handle communication error messages here when simple_server is refactored
+  if (resp == NULL) {
+    rc = 33;
+  } else {
+    cJSON *payload = cJSON_GetObjectItem(resp, "status");
+    if (strcmp(payload->valuestring, "ACK") == 0) {
+      rc = 0;
+    } else {
+      rc = 44;
+    }
+    cJSON_Delete(resp);
+  }
 }
 
 
@@ -102,7 +136,9 @@ int main(int argc, char* argv[])
 {
   /////////////////////////////////////////////////////////////
   // parse options
-  char filename[256] = { 0 };
+  char filename[1024] = { 0 };
+  char server_string[1024] = {0 };
+  char *host, *port;
   size_t ost = SIZE_MAX;
   size_t b_size = 64 * 1024;
   size_t s_count = 16;
@@ -115,6 +151,7 @@ int main(int argc, char* argv[])
       { "segments", required_argument, NULL, 's' },
       { "block_size", required_argument, NULL, 'b' },
       { "tries", required_argument, NULL, 't' },
+      { "address", required_argument, NULL, 'a' },
       { 0 }
   };
 
@@ -145,12 +182,29 @@ int main(int argc, char* argv[])
          * for this option. it is null if there was no argument.
          */
         if (strlen(optarg) >= sizeof(filename)) {
-          fprintf(stderr, "Error: filename longer than 255: %s\n", optarg);
+          fprintf(stderr, "Error: filename longer than %zu: %s\n", sizeof(filename)-1, optarg);
           usage (stderr, argv[0]);
           return 1;
         }
         strncpy (filename, optarg, sizeof(filename) - 1);
         filename[sizeof (filename) - 1] = '\0';
+        break;
+      case 'a':
+        if (strlen(optarg) >= sizeof(server_string)) {
+          fprintf(stderr, "Error: address longer than %zu: %s\n", sizeof(server_string) - 1, optarg);
+          usage (stderr, argv[0]);
+          return 1;
+        }
+        strncpy (server_string, optarg, sizeof(server_string) - 1);
+        server_string[sizeof(server_string) - 1] = '\0';
+        char * colon = strchr(server_string, ':');
+        if (colon == 0 || colon == server_string) {
+          printf("malformed sever string: \"%s\"\n", server_string);
+          return 1;
+        }
+        *colon = '\0';
+        host = server_string;
+        port = colon + 1;
         break;
       case 'o':
         ost = strtoul(optarg, &pEnd, 10);
@@ -256,6 +310,14 @@ int main(int argc, char* argv[])
     if (result == 0) {
       // good experiment - write the result
       double duration = time_diff(start_t, end_t);
+      if (host) {
+        int sockfd = connect_to_simple_server(host, port);
+        if (sockfd == -1) {
+          fprintf(stderr, "Error connecting to server %s (port %s). Message not sent.\n", host, port);
+        } else {
+          send_to_server(sockfd, start_ts, end_ts, ost, duration, fileSize); // ignoring return code for now
+        }
+      }
       printf("%ld, %ld, %zu, %f, %zu\n", start_ts, end_ts, ost, duration, fileSize);
       free(fileContent);
       return 0;
