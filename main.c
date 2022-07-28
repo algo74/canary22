@@ -72,8 +72,8 @@ int send_to_server(int sockfd, size_t start_ts, size_t end_ts, size_t ost, doubl
       rc = 44;
     }
     cJSON_Delete(resp);
-    return rc;
   }
+  return rc;
 }
 
 
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
   // parse options
   char filename[1024] = { 0 };
   char server_string[1024] = {0 };
-  char *host, *port;
+  char *host = 0, *port = 0;
   size_t ost = SIZE_MAX;
   size_t b_size = 64 * 1024;
   size_t s_count = 16;
