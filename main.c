@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
      * one colon after an option indicates that it has an argument, two
      * indicates that the argument is optional. order is unimportant.
      */
-    int opt = getopt_long (argc, argv, "ho:f:s:b:t:", longopts, 0);
+    int opt = getopt_long (argc, argv, "ho:f:s:b:t:a:", longopts, 0);
 
     if (opt == -1) {
       /* a return value of -1 indicates that there are no more options */
