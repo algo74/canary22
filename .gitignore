@@ -1,2 +1,4 @@
 canary
 *.o
+.idea
+cmake-build-debug
