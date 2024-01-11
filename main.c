@@ -100,38 +100,15 @@ int open_stripe_file(const char *tfile, const int mode, const int stripe_offset)
 }
 
 
-int do_write(size_t b_size, size_t fileSize, char *fileContent, int out)
-{
-  for (char *p = fileContent; p < fileContent + fileSize;)
-  {
-    for (size_t to_write = b_size; to_write > 0;) {
-      size_t written = write(out, p, to_write);
-      if (written == -1) {
-        return -1;
-      }
-      p += written;
-      to_write -= written;
-    }
-    fsync(out);
-  }
-  return 0;
-}
-
-
-void do_write1(size_t b_size, size_t fileSize, char *fileContent, int out)
-{
-  // TODO: write() (and similar system calls) will transfer at
-  //  most 0x7ffff000 (2,147,479,552) bytes, returning the number of
-  //  bytes actually transferred.
-  write(out, fileContent, fileSize);
-  fsync(out);
-}
-
 
 void usage(FILE *f, char *exe)
 {
   fprintf(f, "Usage: %s { {-h|--help} | {-f|--filename} <filename> {-o|--ost} <OST #>\n"
-             "             [{-b|--block_size <KiB>] [{-s|--segments <count>] [{-t|--tries <count>]}\n", exe);
+             "             [{-b|--block_size <KiB>] [{-s|--segments <count>}] [{-t|--tries <count>}] [{-m|--max_time <seconds>}]\n"
+						 "b[lock_size]: number of KiB to write before sync (default: 64)\n"
+						 "s[egments]:   number of segments (blocks) to write (default: 16)\n"
+						 "t[ries]:      maximum number of attempts to write the file without errors (default: 5)\n"
+						 "m[ax_time]:   time after which the operation is cancelled (making a partial write) (disabled if missing)\n", exe);
 }
 
 
@@ -146,6 +123,7 @@ int main(int argc, char* argv[])
   size_t b_size = 64 * 1024;
   size_t s_count = 16;
   size_t n_tries = 5;
+  size_t max_time = 0;
 
   struct option longopts[] = {
       { "help", no_argument, NULL, 'h' },
@@ -154,6 +132,7 @@ int main(int argc, char* argv[])
       { "segments", required_argument, NULL, 's' },
       { "block_size", required_argument, NULL, 'b' },
       { "tries", required_argument, NULL, 't' },
+      { "max_time", required_argument, NULL, 'm' },
       { "address", required_argument, NULL, 'a' },
       { 0 }
   };
@@ -168,7 +147,7 @@ int main(int argc, char* argv[])
      * one colon after an option indicates that it has an argument, two
      * indicates that the argument is optional. order is unimportant.
      */
-    int opt = getopt_long (argc, argv, "ho:f:s:b:t:a:", longopts, 0);
+    int opt = getopt_long (argc, argv, "ho:f:s:b:t:m:a:", longopts, 0);
 
     if (opt == -1) {
       /* a return value of -1 indicates that there are no more options */
@@ -241,6 +220,14 @@ int main(int argc, char* argv[])
           return 1;
         }
         break;
+      case 'm':
+        max_time = strtoul(optarg, &pEnd, 10);
+        if (max_time == 0 || pEnd != optarg + strlen(optarg)) {
+          fprintf(stderr, "Error: bad value for maximum time (positive integer is expected): %s\n", optarg);
+          usage (stderr, argv[0]);
+          return 1;
+        }
+        break;
       case '?':
         /* a return value of '?' indicates that an option was malformed.
          * this could mean that an unrecognized option was given, or that an
@@ -303,7 +290,27 @@ int main(int argc, char* argv[])
     // Write content to the file
     start_t = get_precise_time();
     long start_ts = get_ts();
-    int result = do_write(b_size, fileSize, fileContent, out);
+    char *p = fileContent;
+		int result = 0;
+    while ( p < fileContent + fileSize)
+    {
+      for (size_t to_write = b_size; to_write > 0;) {
+        size_t written = write(out, p, to_write);
+        if (written == -1) {
+          result = -1;
+          break;
+        }
+        p += written;
+        to_write -= written;
+      }
+			if (result == -1) break;
+  		my_time cur_t = get_precise_time();
+  		double diff = time_diff(start_t, cur_t);
+      fsync(out);
+      if (max_time > 0 && diff > (double)max_time) {
+        break;
+      }
+    }
     end_t = get_precise_time();
     long end_ts = get_ts();
     // close the file
@@ -311,6 +318,7 @@ int main(int argc, char* argv[])
     unlink(filename);
 
     if (result == 0) {
+      size_t written = p - fileContent;
       // good experiment - write the result
       double duration = time_diff(start_t, end_t);
       if (host) {
@@ -321,7 +329,8 @@ int main(int argc, char* argv[])
           send_to_server(sockfd, start_ts, end_ts, ost, duration, fileSize); // ignoring return code for now
         }
       }
-      printf("%ld, %ld, %zu, %f, %zu\n", start_ts, end_ts, ost, duration, fileSize);
+      printf("%ld, %ld, %zu, %f, %zu\n", start_ts, end_ts, ost, duration, written);
+      printf("Transfer rate: %f\n", (double)written / duration);
       free(fileContent);
       return 0;
     }
